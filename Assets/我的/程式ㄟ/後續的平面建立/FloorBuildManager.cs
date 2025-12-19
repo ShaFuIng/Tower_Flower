@@ -153,7 +153,6 @@ public class FloorBuildManager : MonoBehaviour
     // ------------------------------------------------------
     // ✅ 只負責維護「BFS 用的原點 Tile」
     // ------------------------------------------------------
-
     // ------------------------------------------------------
     // UI / Touch Filtering (new InputSystem safe method)
     // ------------------------------------------------------
@@ -465,19 +464,15 @@ public class FloorBuildManager : MonoBehaviour
         undoStack.Push(wallObj.transform);
 
         // ============================
-        // ✅ NEW：牆阻擋 BFS 邏輯
+        // ✅ FIX：改用更穩健的方式尋找相鄰地磚
         // ============================
         FloorTileInfo floorA = floor.GetComponent<FloorTileInfo>();
-        FloorTileInfo floorB = null;
-
-        foreach (var t in allFloors)
-        {
-            if (Vector3.Distance(t.position, wallPos + dir.normalized * step * 0.5f) < 0.01f)
-            {
-                floorB = t.GetComponent<FloorTileInfo>();
-                break;
-            }
-        }
+        
+        // 計算牆另一側的理論座標
+        Vector3 otherSidePos = floor.position + dir.normalized * step;
+        
+        // 使用輔助函式來尋找
+        FloorTileInfo floorB = TryFindAdjacentFloor(otherSidePos);
 
         RegisterWallBlockBetweenTiles(floorA, floorB);
     }
@@ -546,6 +541,75 @@ public class FloorBuildManager : MonoBehaviour
 
         allWalls.Add(wallObj.transform);
         undoStack.Push(wallObj.transform);
+
+        // ============================
+        // ✅ FIX：這裡也要記錄牆阻擋（與 TryPlaceWallFromFloor 一致）
+        // ============================
+        // 建牆會檔住相鄰的兩顆 floor tile（如果有的話）
+        // 但從「牆上方向」建牆時，新牉可能無法直接指到 floor tiles
+        // 所以要找「這道新牆兩側」的 floor tile，如果有就連結
+
+        Vector3 wallDir = pivotWall.forward; // 新牆的向外法線方向
+        Vector3 offset = wallDir * (scale.x * 0.5f + 0.01f); // 牆厚度 + margin
+
+        // 檢查「新牆前方」是否有 floor tile
+        FloorTileInfo floorBefore = TryFindAdjacentFloor(pos + offset);
+
+        // 檢查「新牆後方」是否有 floor tile  
+        FloorTileInfo floorAfter = TryFindAdjacentFloor(pos - offset);
+
+        // 如果有任一側的 floor tile，就註冊阻擋
+        if (floorBefore != null && floorAfter != null)
+        {
+            RegisterWallBlockBetweenTiles(floorBefore, floorAfter);
+        }
+    }
+
+    // ============================
+    // ✅ NEW Helper：找「距離某點最近的 floor tile」
+    // ============================
+    private FloorTileInfo TryFindAdjacentFloor(Vector3 worldPos)
+    {
+        FloorTileInfo best = null;
+        float bestDist = float.MaxValue;
+
+        foreach (var f in allFloors)
+        {
+            float d = Vector3.Distance(f.position, worldPos);
+            if (d < bestDist && d < 1.5f) // 距離要在合理範圍（約 1.5 倍 tile 寬）
+            {
+                bestDist = d;
+                best = f.GetComponent<FloorTileInfo>();
+            }
+        }
+
+        return best;
+    }
+
+    // ======================================================
+    // Exit Build Mode
+    // ======================================================S
+    public void ExitBuildMode()
+    {
+        Debug.Log("[FloorBuild] ExitBuildMode called");
+
+        if (undoButton != null)
+            undoButton.SetActive(false);
+
+        if (switchModeButton != null)
+            switchModeButton.SetActive(false);
+
+        if (finishBuildButton != null) finishBuildButton.SetActive(false);
+            finishBuildButton.SetActive(false);
+
+        // ✅ 關鍵：停止建造模式
+        if (ARBuildManager.Instance != null)
+            ARBuildManager.Instance.isBuildMode = false;
+
+        Debug.Log("[FloorBuild] Build Mode disabled");
+
+        // ✅ 通知 UI 管理器更新狀態
+        TowerDefenseUIManager.Instance?.EnableCreateButton();
     }
 
     // ======================================================
@@ -557,31 +621,73 @@ public class FloorBuildManager : MonoBehaviour
 
         Transform last = undoStack.Pop();
 
+        // ============================
+        // ✅ NEW：撤銷時清理牆阻擋（需要掃全部 tile 來反向操作）
+        // ============================
+        if (allWalls.Contains(last))
+        {
+            // 這是一道牆，撤銷時要清理它所有相關的 block 標記
+            ClearWallBlocks(last);
+        }
+
         allFloors.Remove(last);
         allWalls.Remove(last);
 
         Destroy(last.gameObject);
     }
 
-    public void ExitBuildMode()
+    // ============================
+    // ✅ NEW Helper：清理某道牆造成的所有阻擋
+    // ============================
+    private void ClearWallBlocks(Transform wallTf)
     {
-        Debug.Log("[FloorBuild] ExitBuildMode called");
+        if (wallTf == null) return;
 
-        if (undoButton != null)
-            undoButton.SetActive(false);
+        Vector3 wallPos = wallTf.position;
+        Vector3 wallScale = wallTf.localScale;
+        Vector3 wallDir = wallTf.forward;
+        float offset = wallScale.x * 0.5f + 0.01f;
 
-        if (switchModeButton != null)
-            switchModeButton.SetActive(false);
+        // 找這道牆兩側可能的 floor tile
+        FloorTileInfo floorBefore = TryFindAdjacentFloor(wallPos + wallDir * offset);
+        FloorTileInfo floorAfter = TryFindAdjacentFloor(wallPos - wallDir * offset);
 
-        if (finishBuildButton != null)
-            finishBuildButton.SetActive(false);
+        // 反向操作：清空 block
+        if (floorBefore != null && floorAfter != null)
+        {
+            int dx = floorAfter.gridX - floorBefore.gridX;
+            int dy = floorAfter.gridY - floorBefore.gridY;
 
-        ARBuildManager.Instance.isBuildMode = false;
+            if (dx == 1 && dy == 0)
+            {
+                floorBefore.blockEast = false;
+                floorAfter.blockWest = false;
+            }
+            else if (dx == -1 && dy == 0)
+            {
+                floorBefore.blockWest = false;
+                floorAfter.blockEast = false;
+            }
+            else if (dx == 0 && dy == 1)
+            {
+                floorBefore.blockNorth = false;
+                floorAfter.blockSouth = false;
+            }
+            else if (dx == 0 && dy == -1)
+            {
+                floorBefore.blockSouth = false;
+                floorAfter.blockNorth = false;
+            }
+        }
 
-        Debug.Log("[FloorBuild] Build Mode disabled");
-
-        TowerDefenseUIManager.Instance.EnableCreateButton();
+        if (debugLogs) Debug.Log($"[WallBlock] ClearWallBlocks from {wallTf.name}");
     }
+
+    // ============================
+    // ✅ DEBUG 開關（可選）
+    // ============================
+    [SerializeField]
+    private bool debugLogs = false;
 
     // ======================================================
     // ✅ NEW：在兩個 FloorTile 之間標記牆阻擋
@@ -600,50 +706,25 @@ public class FloorBuildManager : MonoBehaviour
         {
             a.blockEast = true;
             b.blockWest = true;
+            if (debugLogs) Debug.Log($"[WallBlock] {a.name}({a.gridX},{a.gridY}) <-> {b.name}({b.gridX},{b.gridY}), dx=1 dy=0, blockEast/blockWest = true");
         }
         else if (dx == -1 && dy == 0)
         {
             a.blockWest = true;
             b.blockEast = true;
+            if (debugLogs) Debug.Log($"[WallBlock] {a.name}({a.gridX},{a.gridY}) <-> {b.name}({b.gridX},{b.gridY}), dx=-1 dy=0, blockWest/blockEast = true");
         }
         else if (dx == 0 && dy == 1)
         {
             a.blockNorth = true;
             b.blockSouth = true;
+            if (debugLogs) Debug.Log($"[WallBlock] {a.name}({a.gridX},{a.gridY}) <-> {b.name}({b.gridX},{b.gridY}), dx=0 dy=1, blockNorth/blockSouth = true");
         }
         else if (dx == 0 && dy == -1)
         {
             a.blockSouth = true;
             b.blockNorth = true;
+            if (debugLogs) Debug.Log($"[WallBlock] {a.name}({a.gridX},{a.gridY}) <-> {b.name}({b.gridX},{b.gridY}), dx=0 dy=-1, blockSouth/blockNorth = true");
         }
     }
-
-
-    private WallDirection DirToWallDirection(Vector3 worldDir)
-    {
-        worldDir = Vector3.ProjectOnPlane(worldDir, basePlaneTransform.up).normalized;
-
-        if (Vector3.Dot(worldDir, basePlaneTransform.forward) > 0.7f) return WallDirection.North;
-        if (Vector3.Dot(worldDir, -basePlaneTransform.forward) > 0.7f) return WallDirection.South;
-        if (Vector3.Dot(worldDir, basePlaneTransform.right) > 0.7f) return WallDirection.East;
-        return WallDirection.West;
-    }
-
-    private FloorTileInfo FindTileByGrid(int gx, int gy)
-    {
-        foreach (var t in allTiles)
-        {
-            if (t != null && t.gridX == gx && t.gridY == gy) return t;
-        }
-
-        // basePlane 也可能不在 allTiles？你有加進去了，但保險
-        if (basePlaneTransform != null)
-        {
-            var baseInfo = basePlaneTransform.GetComponent<FloorTileInfo>();
-            if (baseInfo != null && baseInfo.gridX == gx && baseInfo.gridY == gy)
-                return baseInfo;
-        }
-        return null;
-    }
-
 }

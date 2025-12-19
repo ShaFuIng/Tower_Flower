@@ -95,14 +95,17 @@ public class WorldSpacePathfinder
 
                 bool edgeBlocked = IsEdgeBlocked(current, neighbour);
 
-                Debug.Log($"[GRID]   Check Neighbour {neighbour.name} ({neighbour.gridX},{neighbour.gridY}) " +
-                          $"Walkable={neighbour.Walkable} EdgeBlocked={edgeBlocked}");
+                Debug.Log($"[GRID]   Neighbour {neighbour.name} ({neighbour.gridX},{neighbour.gridY}) " +
+                          $"Walkable={neighbour.Walkable} EdgeBlocked={edgeBlocked}" +
+                          (edgeBlocked ? 
+                              $" (blocked: current.IsBlockedTowards={current.IsBlockedTowards(neighbour)}, " +
+                              $"neighbour.IsBlockedTowards={neighbour.IsBlockedTowards(current)})" : ""));
 
                 if (!cameFrom.ContainsKey(neighbour) && neighbour.Walkable && !edgeBlocked)
                 {
                     cameFrom[neighbour] = current;
                     queue.Enqueue(neighbour);
-                }
+                }   
                 else
                 {
                     Debug.Log($"[GRID]   Skip {neighbour.name} (reason: " +

@@ -736,7 +736,7 @@ private void SnapPreviewToWall(Collider tileCollider, bool forceUseHitPoint)
         else if (dx == 0 && dy == 1) a.blockNorth = blocked;
         else if (dx == 0 && dy == -1) a.blockSouth = blocked;
 
-        // b -> a（反向也要設，避免只擋單向）
+        // b -> a（反向也要設）
         dx = -dx;
         dy = -dy;
 
