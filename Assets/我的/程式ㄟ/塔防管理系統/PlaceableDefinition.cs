@@ -19,4 +19,7 @@ public class PlaceableDefinition : MonoBehaviour
     [Header("Rules")]
     public int maxCount = -1;           // -1 = 不限制
     public OccupyType occupyType;       // 放下去 tile 變成什麼
+
+    [Header("Cost")]
+    public int cost = 100;              // Cost to place this object (from tower database level 1)
 }

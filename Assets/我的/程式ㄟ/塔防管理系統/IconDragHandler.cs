@@ -50,6 +50,13 @@ public class IconDragHandler : MonoBehaviour,
             return;
         }
 
+        // ✅ Check if player can afford this placement
+        if (!PlacementCostValidator.CanStartPlacement(definition.cost))
+        {
+            // Cannot afford - block drag and show warning
+            return;
+        }
+
         // ✅ B 方案：直接把 definition 交出去
         SpawnGoalPlacementManager.Instance.BeginPreview(definition);
         isDraggingPreview = true;
@@ -75,9 +82,15 @@ public class IconDragHandler : MonoBehaviour,
             return;
         }
 
+        // ✅ 關鍵修復：確保 ScrollRect 恢復正常狀態
+        parentScrollRect.enabled = true;
+
         SpawnGoalPlacementManager.Instance.EndPreview();
 
         isDraggingPreview = false;
         pointerDownOnIcon = false;
+
+        // ✅ 交還控制權給 ScrollRect
+        parentScrollRect?.OnEndDrag(eventData);
     }
 }

@@ -6,10 +6,10 @@ public enum PlaceMode
     None, Spawn, Goal
 }
 
-public class TowerDefenseUIManager : MonoBehaviour
+public class    TowerDefenseUIManager : MonoBehaviour
 {
     public static TowerDefenseUIManager Instance;
-
+    
     [Header("Object Menu Buttons")]
     public Button spawnButton;
     public Button goalButton;
@@ -33,6 +33,9 @@ public class TowerDefenseUIManager : MonoBehaviour
     [Header("Path Control UI")]
     public GameObject resetPathButton;
     public GameObject gameStartButton;
+
+    [Header("Money UI")]
+    public MoneyUIController moneyUIController;
 
     public PlaceMode currentMode = PlaceMode.None;
 
@@ -127,6 +130,7 @@ public class TowerDefenseUIManager : MonoBehaviour
         currentMode = PlaceMode.Spawn;
         UpdateSelectionUI();
 
+        // ✅ 只關 Tower UI，不要動 ScrollView
         TowerUIManager.Instance?.Hide();
     }
 
@@ -135,6 +139,7 @@ public class TowerDefenseUIManager : MonoBehaviour
         currentMode = PlaceMode.Goal;
         UpdateSelectionUI();
 
+        // ✅ 只關 Tower UI，不要動 ScrollView
         TowerUIManager.Instance?.Hide();
     }
 
@@ -148,8 +153,13 @@ public class TowerDefenseUIManager : MonoBehaviour
 
     private void UpdateSelectionUI()
     {
-        spawnSelectionBox.SetActive(currentMode == PlaceMode.Spawn);
-        goalSelectionBox.SetActive(currentMode == PlaceMode.Goal);
+        // ✅ 正確的邏輯：只控制高亮框的顯示/隱藏
+        //    按鈕本身 (spawnButton, goalButton) 應該保持啟用狀態
+        if (spawnSelectionBox != null)
+            spawnSelectionBox.SetActive(currentMode == PlaceMode.Spawn);
+
+        if (goalSelectionBox != null)
+            goalSelectionBox.SetActive(currentMode == PlaceMode.Goal);
     }
 
     // =========================================================
@@ -160,6 +170,12 @@ public class TowerDefenseUIManager : MonoBehaviour
         ClearSelectionUI();
         UpdateComputePathButtonVisibility();
         HideResetPathButton();
+
+        // ✅ 隱藏金錢 UI（回到建築模式）
+        if (moneyUIController != null)
+        {
+            moneyUIController.HideUI();
+        }
     }
 
     public void ShowResetPathButton()
@@ -193,6 +209,12 @@ public class TowerDefenseUIManager : MonoBehaviour
 
         // 進入 gameplay 前也關掉塔資訊 UI
         TowerUIManager.Instance?.Hide();
+
+        // ✅ 啟動金錢 UI
+        if (moneyUIController != null)
+        {
+            moneyUIController.ShowUI();
+        }
 
         PathfindingManager.Instance?.ResetPathPreview();
         BuildPhaseManager.Instance.SetPhase(BuildPhase.Gameplay);

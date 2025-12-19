@@ -136,10 +136,15 @@ public class SpawnGoalPlacementManager : MonoBehaviour
         lastValidPreviewPos = Vector3.zero;
         lastValidPreviewRot = Quaternion.identity;
 
-        scrollGroup.blocksRaycasts = false;
-        scrollGroup.interactable = false;
-        contentLayout.enabled = false;
-        contentFitter.enabled = false;
+        // ✅ 只禁用 raycast，不要改變 layout 或其他 properties
+        if (scrollGroup != null)
+            scrollGroup.blocksRaycasts = false;
+
+        // ✅ 新增：確保 Layout 組件保持啟用（防止列表高度縮水）
+        if (contentLayout != null)
+            contentLayout.enabled = true;
+        if (contentFitter != null)
+            contentFitter.enabled = true;
 
         previewWallOwnerFloor = null;
         previewWallDir = null;
@@ -180,10 +185,9 @@ public class SpawnGoalPlacementManager : MonoBehaviour
 
         isPreviewing = false;
 
-        scrollGroup.blocksRaycasts = true;
-        scrollGroup.interactable = true;
-        contentLayout.enabled = true;
-        contentFitter.enabled = true;
+        // ✅ 恢復 ScrollView raycast（最重要！）
+        if (scrollGroup != null)
+            scrollGroup.blocksRaycasts = true;
 
         if (previewObject != null)
             previewObject.SetActive(false);
@@ -692,6 +696,9 @@ private void SnapPreviewToWall(Collider tileCollider, bool forceUseHitPoint)
 
         placedObjects[placingDefinition].Add(obj);
 
+        // ✅ Spend money after successful placement
+        PlacementCostValidator.SpendPlacementCost(placingDefinition.cost);
+
         // ✅ 只有 Spawn/Goal 會影響 compute 按鈕顯示，Tower 放置不刷新
         if (placingDefinition.occupyType == OccupyType.Spawn ||
             placingDefinition.occupyType == OccupyType.Goal)
@@ -870,6 +877,12 @@ private void SnapPreviewToWall(Collider tileCollider, bool forceUseHitPoint)
     public void DeleteSelected()
     {
         if (selectedObject == null) return;
+
+        // ✅ Refund money before destroying the object
+        if (selectedObject.definition != null)
+        {
+            MoneyManager.Instance?.RefundMoney(selectedObject.definition.cost);
+        }
 
         // ✅ 先記下類型（Destroy 之後就不好拿了）
         OccupyType deletedType = OccupyType.None;
