@@ -1,0 +1,52 @@
+﻿{
+  "towers": [
+    {
+      "id": "floor_spike",
+      "ui": {
+        "name": "地刺陷阱",
+        "type": "Floor Trap",
+        "description": "對走在地板上的怪物造成傷害。"
+      },
+      "levels": [
+        {
+          "level": 1,
+          "cost": 100,
+          "damage": 10,
+          "cooldown": 1.0,
+          "rangeTiles": 0
+        },
+        {
+          "level": 2,
+          "cost": 150,
+          "damage": 16,
+          "cooldown": 0.9,
+          "rangeTiles": 0
+        }
+      ]
+    },
+    {
+      "id": "wall_laser",
+      "ui": {
+        "name": "雷射炮",
+        "type": "Wall Trap",
+        "description": "附著在牆上，對前方範圍內的怪物進行雷射射擊。"
+      },
+      "levels": [
+        {
+          "level": 1,
+          "cost": 220,
+          "damage": 18,
+          "cooldown": 0.8,
+          "rangeTiles": 4
+        },
+        {
+          "level": 2,
+          "cost": 320,
+          "damage": 26,
+          "cooldown": 0.7,
+          "rangeTiles": 5
+        }
+      ]
+    }
+  ]
+}
