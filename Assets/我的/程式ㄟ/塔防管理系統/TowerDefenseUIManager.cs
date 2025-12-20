@@ -6,7 +6,7 @@ public enum PlaceMode
     None, Spawn, Goal
 }
 
-public class    TowerDefenseUIManager : MonoBehaviour
+public class TowerDefenseUIManager : MonoBehaviour
 {
     public static TowerDefenseUIManager Instance;
     
@@ -32,10 +32,13 @@ public class    TowerDefenseUIManager : MonoBehaviour
 
     [Header("Path Control UI")]
     public GameObject resetPathButton;
-    public GameObject gameStartButton;
+    public GameObject gameStartButton; // This is the "Enter Preparation Phase" button
 
     [Header("Money UI")]
     public MoneyUIController moneyUIController;
+
+    [Header("Battle Flow")]
+    public BattleStartButtonController battleStartButton; // Add reference to the new button controller
 
     public PlaceMode currentMode = PlaceMode.None;
 
@@ -65,11 +68,19 @@ public class    TowerDefenseUIManager : MonoBehaviour
             PathfindingManager.Instance.SimulateMonsterMovement();
         });
 
+        // --- End Integration ---
+
         if (PathfindingManager.Instance != null)
             PathfindingManager.Instance.arrowRenderer = arrowRenderer;
 
         HideResetPathButton();
         HideGameStartButton();
+
+        // Hide the battle start button initially
+        if (battleStartButton != null)
+        {
+            battleStartButton.Hide();
+        }
 
         objectMenu.SetActive(false);
         ClearSelectionUI();
@@ -198,6 +209,7 @@ public class    TowerDefenseUIManager : MonoBehaviour
         gameStartButton.SetActive(false);
     }
 
+    // This method now correctly represents "Enter Preparation Phase"
     public void OnGameStartButtonPressed()
     {
         HideResetPathButton();
@@ -214,6 +226,12 @@ public class    TowerDefenseUIManager : MonoBehaviour
         if (moneyUIController != null)
         {
             moneyUIController.ShowUI();
+        }
+
+        // Show the "Start Battle" button now that we are in the preparation phase.
+        if (battleStartButton != null)
+        {
+            battleStartButton.Show();
         }
 
         PathfindingManager.Instance?.ResetPathPreview();
