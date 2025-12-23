@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using System; // For Action
 
 public class MonsterMovement : MonoBehaviour
 {
@@ -16,6 +17,11 @@ public class MonsterMovement : MonoBehaviour
     private List<Vector3> path;
     private int pathIndex = 0;
     private bool hasPath = false;
+
+    // New additions
+    public event Action OnReachedGoal;
+    private MonsterStats monsterStats;
+    private GoalHealthManager goalHealthManager; // Reference to the goal
 
     // =========================================================
     // 🔹 尺寸（你原本的，完全保留）
@@ -126,7 +132,29 @@ public class MonsterMovement : MonoBehaviour
 
     private void Update()
     {
-        if (!hasPath || pathIndex >= path.Count) return;
+        if (!hasPath) return;
+
+        // Check if path is completed
+        if (pathIndex >= path.Count)
+        {
+            hasPath = false; // Stop further updates
+            OnReachedGoal?.Invoke();
+
+            // Deal damage to the goal
+            if (goalHealthManager != null)
+            {
+                // For now, let's assume each monster deals 1 damage.
+                // This can be changed later to use a value from the monster's data.
+                goalHealthManager.TakeDamage(1);
+            }
+
+            // Resolve the monster
+            if (monsterStats != null)
+            {
+                monsterStats.Resolve(ResolvedType.ReachedGoal);
+            }
+            return;
+        }
 
         Vector3 target = path[pathIndex];
         Vector3 currentPos = transform.position;
@@ -174,6 +202,9 @@ public class MonsterMovement : MonoBehaviour
     private void Awake()
     {
         cachedRenderers = GetComponentsInChildren<Renderer>(true);
+        monsterStats = GetComponent<MonsterStats>();
+        // Find the GoalHealthManager in the scene
+        goalHealthManager = FindObjectOfType<GoalHealthManager>();
     }
 
     public void ShowAfterScale()

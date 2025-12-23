@@ -1,20 +1,26 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.Events;
-using TMPro; // Using TextMeshPro for modern UI text.
+using TMPro;
 
+/// <summary>
+/// Controls the battle confirmation panel UI.
+/// Displays level preview information before entering combat.
+/// This class is UI-only and does not contain gameplay logic.
+/// </summary>
 public class BattleConfirmPanelController : MonoBehaviour
 {
     [Header("UI References")]
     [SerializeField] private Button confirmButton;
     [SerializeField] private Button cancelButton;
-    [SerializeField] private TMP_Text wavesText; // Text to display total waves
-    [SerializeField] private TMP_Text enemiesText; // Text to display total enemies
+    [SerializeField] private TMP_Text enemiesText;   // Displays total enemies
+    [SerializeField] private TMP_Text titleText;     // Optional: level title
+    [SerializeField] private TMP_Text descriptionText; // Optional: level description
 
-    // Event invoked when the user confirms the battle start.
+    // Event invoked when the user confirms starting the battle.
     public UnityEvent OnConfirm;
 
-    // Event invoked when the user cancels the battle start.
+    // Event invoked when the user cancels starting the battle.
     public UnityEvent OnCancel;
 
     private void Awake()
@@ -22,49 +28,42 @@ public class BattleConfirmPanelController : MonoBehaviour
         // Ensure the panel is hidden by default.
         gameObject.SetActive(false);
 
-        // Add listeners to the buttons.
         if (confirmButton != null)
-        {
             confirmButton.onClick.AddListener(HandleConfirm);
-        }
         else
-        {
-            Debug.LogError("Confirm Button is not assigned in the BattleConfirmPanelController.");
-        }
+            Debug.LogError("Confirm Button is not assigned.", this);
 
         if (cancelButton != null)
-        {
             cancelButton.onClick.AddListener(HandleCancel);
-        }
         else
-        {
-            Debug.LogError("Cancel Button is not assigned in the BattleConfirmPanelController.");
-        }
+            Debug.LogError("Cancel Button is not assigned.", this);
     }
 
     /// <summary>
     /// Shows the confirmation panel and populates it with level data.
     /// </summary>
-    /// <param name="levelData">The data for the level to be displayed.</param>
     public void Show(LevelData levelData)
     {
         if (levelData == null)
         {
-            Debug.LogError("LevelData is null. Cannot show panel.");
+            Debug.LogError("LevelData is null. Cannot show confirmation panel.", this);
             return;
         }
 
-        // Update UI text elements with data from the LevelData object.
-        if (wavesText != null)
-        {
-            wavesText.text = $"Total Waves: {levelData.totalWaves}";
-        }
+        // Display total enemies
         if (enemiesText != null)
-        {
             enemiesText.text = $"Total Enemies: {levelData.totalEnemies}";
+
+        // Display optional UI preview text from Level.json
+        if (levelData.uiPreview != null)
+        {
+            if (titleText != null)
+                titleText.text = levelData.uiPreview.title;
+
+            if (descriptionText != null)
+                descriptionText.text = levelData.uiPreview.description;
         }
 
-        // Show the panel.
         gameObject.SetActive(true);
     }
 
@@ -76,20 +75,12 @@ public class BattleConfirmPanelController : MonoBehaviour
         gameObject.SetActive(false);
     }
 
-    /// <summary>
-    /// Handles the confirm button click.
-    /// Invokes the OnConfirm event and then hides the panel.
-    /// </summary>
     private void HandleConfirm()
     {
         OnConfirm?.Invoke();
         Hide();
     }
 
-    /// <summary>
-    /// Handles the cancel button click.
-    /// Invokes the OnCancel event and then hides the panel.
-    /// </summary>
     private void HandleCancel()
     {
         OnCancel?.Invoke();
@@ -98,14 +89,10 @@ public class BattleConfirmPanelController : MonoBehaviour
 
     private void OnDestroy()
     {
-        // Clean up listeners to prevent memory leaks.
         if (confirmButton != null)
-        {
             confirmButton.onClick.RemoveListener(HandleConfirm);
-        }
+
         if (cancelButton != null)
-        {
             cancelButton.onClick.RemoveListener(HandleCancel);
-        }
     }
 }

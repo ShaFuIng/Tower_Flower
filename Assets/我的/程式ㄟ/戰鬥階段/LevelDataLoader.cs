@@ -1,26 +1,54 @@
 ﻿using UnityEngine;
+using System.IO;
 
 /// <summary>
-/// Loads level data.
-/// In a real-world scenario, this might load from a file or a server.
-/// For now, it provides hardcoded mock data for development.
+/// Loads level data from a JSON file.
+/// This class is responsible for reading and parsing the file,
+/// but contains no gameplay logic itself.
 /// </summary>
 public class LevelDataLoader : MonoBehaviour
 {
+    [Header("Configuration")]
+    [SerializeField] private string levelFileName = "Level.json";
+
+    private LevelData currentLevelData;
+
+    public LevelData CurrentLevelData => currentLevelData;
+
+    private void Awake()
+    {
+        LoadLevelDataFromFile();
+    }
+
     /// <summary>
-    /// Retrieves the data for the current level.
-    /// This is a placeholder and returns a fixed LevelData object.
+    /// Loads the level data from the specified JSON file in the Resources/DataBase folder.
     /// </summary>
-    /// <returns>A LevelData object with mock information.</returns>
+    private void LoadLevelDataFromFile()
+    {
+        string path = Path.Combine("DataBase", Path.GetFileNameWithoutExtension(levelFileName));
+        TextAsset jsonFile = Resources.Load<TextAsset>(path);
+
+        if (jsonFile != null)
+        {
+            currentLevelData = JsonUtility.FromJson<LevelData>(jsonFile.text);
+            Debug.Log($"Successfully loaded level data for Level ID: {currentLevelData.levelId}");
+        }
+        else
+        {
+            Debug.LogError($"Failed to load level data. Make sure '{levelFileName}' exists in 'Assets/Resources/DataBase'.");
+            // Provide a default fallback to prevent null reference errors
+            currentLevelData = new LevelData();
+        }
+    }
+
+    // This method is kept for compatibility if other parts of the code still use it,
+    // but the recommended way is to access the property.
     public LevelData LoadCurrentLevelData()
     {
-        // In the future, this could be expanded to load data based on a level index
-        // or from a configuration file (e.g., JSON, ScriptableObject).
-        return new LevelData
+        if (currentLevelData == null)
         {
-            levelId = 1,
-            totalWaves = 10,
-            totalEnemies = 50
-        };
+            LoadLevelDataFromFile();
+        }
+        return currentLevelData;
     }
 }

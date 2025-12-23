@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: 5644486675989343010}
   - component: {fileID: 4175356591825009703}
   - component: {fileID: 8818229676757633709}
+  - component: {fileID: 6503585688727807001}
   m_Layer: 3
   m_Name: "\u5B88\u5099\u9EDE"
   m_TagString: Untagged
@@ -127,3 +128,16 @@ MonoBehaviour:
   tile: {fileID: 0}
   definition: {fileID: 0}
   isTower: 1
+--- !u!114 &6503585688727807001
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3094787464268452884}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9bc3790587cb6b94990d766d97f846ff, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GoalHealthManager
+  maxHp: 20
