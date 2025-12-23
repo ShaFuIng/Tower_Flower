@@ -1,0 +1,10 @@
+﻿{
+  "levelId": 1,
+  "baseMaxHp": 20,
+  "totalEnemies": 50,
+
+  "uiPreview": {
+    "title": "Level 1",
+    "description": "Defend the base from incoming enemies."
+  }
+}

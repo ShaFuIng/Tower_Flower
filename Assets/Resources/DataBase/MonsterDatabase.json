@@ -1,0 +1,14 @@
+﻿{
+  "monsters": [
+    {
+      "id": "slime_normal",
+      "rewardMoney": 5,
+      "rewardScore": 100
+    },
+    {
+      "id": "slime_elite",
+      "rewardMoney": 20,
+      "rewardScore": 500
+    }
+  ]
+}
